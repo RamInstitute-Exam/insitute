@@ -32,7 +32,7 @@ export default function AdminRegister() {
       toast.success('Register Successful!')
       setTimeout(()=>{
       navigate("/institute-exam-admin-Login");
-      },200)
+      },100)
     } catch (error) {
       console.error("Registration failed", error);
       

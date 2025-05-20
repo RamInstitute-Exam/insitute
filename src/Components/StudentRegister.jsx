@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import API from "../config/API"; // Axios instance
 import logo from "../assets/Icon.jpeg";
-
+import { toast } from "react-toastify";
 export default function StudentRegister() {
   const [formData, setFormData] = useState({
     Batch: "",
@@ -71,9 +71,11 @@ export default function StudentRegister() {
         ...formData,
         profilePhoto: imageUrl,
       });
-
+      toast.success('Registered Successful!')
       console.log("Registration successful", res.data);
+      setTimeout(()=>{
       navigate("/student-Login");
+      },100)
     } catch (err) {
       console.error("Registration failed", err);
     }
