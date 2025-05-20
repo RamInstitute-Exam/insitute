@@ -22,7 +22,7 @@ export default function AdminRegister() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-     if(!Form.username || !Form.mobileNumber || !Form.email || !Form.password){
+     if(!FormData.username || !FormData.mobileNumber || !FormData.email || !FormData.password){
           toast.error('Please fill in all fields')
           return;
         }
@@ -31,7 +31,7 @@ export default function AdminRegister() {
       console.log("response", response);
       toast.success('Login Successful!')
       setTimeout(()=>{
-      navigate("/admin-Login");
+      navigate("/institute-exam-admin-Login");
       },1000)
     } catch (error) {
       console.error("Registration failed", error);

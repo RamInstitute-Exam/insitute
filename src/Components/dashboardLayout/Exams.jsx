@@ -39,7 +39,7 @@ const AdminExamsList = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div className="container mx-auto px-4 py-6 max-w-5xl">
       <h1 className="text-3xl font-bold text-center mb-8 text-gray-800">
         📝 Admin - Exams List
       </h1>
@@ -49,7 +49,7 @@ const AdminExamsList = () => {
       ) : (
         <>
           {/* Desktop Table View */}
-          <div className=" overflow-x-auto shadow rounded-lg">
+          <div className="overflow-x-auto hidden shadow rounded-lg sm:block">
             <table className="min-w-full bg-white border border-gray-200">
               <thead className="bg-gray-100 text-gray-700">
                 <tr>
@@ -78,7 +78,7 @@ const AdminExamsList = () => {
                         disabled={deletingExam === exam.examCode}
                         aria-label={`Delete exam ${exam.examCode}`}
                         className={`inline-block text-red-600 hover:text-red-800 ${
-                          deletingExam === exam.examCode && "opacity-50 cursor-wait"
+                          deletingExam === exam.examCode ? "opacity-50 cursor-wait" : ""
                         }`}
                       >
                         <FaTrash />
@@ -91,41 +91,39 @@ const AdminExamsList = () => {
           </div>
 
           {/* Mobile Card View */}
-          <div className="sm:hidden space-y-4">
+          <div className="sm:hidden space-y-6">
             {exams.map((exam) => (
               <div
                 key={exam.examCode}
-                className="bg-white border border-gray-200 rounded-lg shadow p-4"
+                className="bg-white border border-gray-200 rounded-lg shadow p-5"
               >
-                <div className="text-sm">
-                  <p className="mb-1">
-                    <span className="font-semibold">Exam Code:</span> {exam.examCode}
-                  </p>
-                  <p className="mb-1">
-                    <span className="font-semibold">Name:</span> {exam.examName}
-                  </p>
-                  <p className="mb-2">
-                    <span className="font-semibold">Description:</span> {exam.examDescription}
-                  </p>
-                  <div className="flex justify-end space-x-4">
-                    <Link
-                      to={`/admin/exams/edit/${exam.examCode}`}
-                      aria-label={`Edit exam ${exam.examCode}`}
-                      className="text-blue-600 hover:text-blue-800"
-                    >
-                      <FaEdit />
-                    </Link>
-                    <button
-                      onClick={() => handleDelete(exam.examCode)}
-                      disabled={deletingExam === exam.examCode}
-                      aria-label={`Delete exam ${exam.examCode}`}
-                      className={`text-red-600 hover:text-red-800 ${
-                        deletingExam === exam.examCode && "opacity-50 cursor-wait"
-                      }`}
-                    >
-                      <FaTrash />
-                    </button>
-                  </div>
+                <p className="mb-2 text-base font-semibold text-gray-700">
+                  Exam Code: <span className="font-normal">{exam.examCode}</span>
+                </p>
+                <p className="mb-2 text-base font-semibold text-gray-700">
+                  Name: <span className="font-normal">{exam.examName}</span>
+                </p>
+                <p className="mb-4 text-base font-semibold text-gray-700">
+                  Description: <span className="font-normal">{exam.examDescription}</span>
+                </p>
+                <div className="flex justify-end space-x-6">
+                  <Link
+                    to={`/admin/exams/edit/${exam.examCode}`}
+                    aria-label={`Edit exam ${exam.examCode}`}
+                    className="text-blue-600 hover:text-blue-800 text-xl"
+                  >
+                    <FaEdit />
+                  </Link>
+                  <button
+                    onClick={() => handleDelete(exam.examCode)}
+                    disabled={deletingExam === exam.examCode}
+                    aria-label={`Delete exam ${exam.examCode}`}
+                    className={`text-red-600 hover:text-red-800 text-xl ${
+                      deletingExam === exam.examCode ? "opacity-50 cursor-wait" : ""
+                    }`}
+                  >
+                    <FaTrash />
+                  </button>
                 </div>
               </div>
             ))}
