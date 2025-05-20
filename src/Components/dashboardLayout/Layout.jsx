@@ -7,7 +7,7 @@ export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="fixed top-0 left-0 w-screen h-screen flex overflow-hidden">
+    <div className="flex h-screen w-screen overflow-hidden relative">
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div
@@ -22,11 +22,12 @@ export default function DashboardLayout() {
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
         md:translate-x-0 md:static md:block`}
       >
+        {/* Pass setSidebarOpen as prop */}
         <Sidebar setSidebarOpen={setSidebarOpen} />
       </aside>
 
       {/* Main content area */}
-      <div className="flex flex-col flex-1 bg-gray-100 overflow-hidden ml-0 md:ml-64">
+      <div className="flex flex-col flex-1 bg-gray-100 overflow-hidden">
         {/* Mobile Topbar */}
         <div className="flex items-center justify-between p-4 bg-white border-b shadow md:hidden">
           <button
