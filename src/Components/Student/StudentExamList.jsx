@@ -110,102 +110,113 @@ export default function StudentExamList() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto mt-10 p-6 bg-white shadow-lg rounded-lg">
-      <h2 className="text-2xl font-bold mb-6">Available Exams</h2>
+    <div className="max-w-6xl mx-auto mt-10 p-4">
+      <h2 className="text-3xl font-bold mb-6 text-center text-gray-800">Available Exams</h2>
 
       {exams.length === 0 ? (
-        <p>No exams available.</p>
+        <p className="text-center text-gray-600">No exams available.</p>
       ) : (
-        <ul className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {exams.map((exam) => {
             const reqStatus = requests[exam.examCode];
             const examStatus = statuses[exam.examCode];
             const isCompleted = examStatus === 'completed';
 
             return (
-              <li key={exam._id} className="border p-4 rounded shadow-sm">
-                <h3 className="text-xl font-semibold">{exam.examName}</h3>
-                <p className="text-gray-700">{exam.examDescription}</p>
-                <p className="text-sm text-gray-500">Code: {exam.examCode}</p>
-                <p className="text-sm text-gray-400">Created: {new Date(exam.createdAt).toLocaleString()}</p>
-                {exam.examEndTime && (
-                  <p className="text-sm text-red-500">
-                    Ends: {new Date(exam.examEndTime).toLocaleString()}
-                  </p>
-                )}
-
-                <div className="flex gap-3 mt-3">
-                  <button
-                    onClick={() => window.open(exam.questionURL, '_blank')}
-                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-                  >
-                    View Question
-                  </button>
-                  <button
-                    onClick={() => window.open(exam.answerURL, '_blank')}
-                    className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-                  >
-                    View Answer
-                  </button>
+              <div
+                key={exam._id}
+                className="bg-white border rounded-2xl shadow hover:shadow-lg transition-all duration-300 p-5 flex flex-col justify-between"
+              >
+                <div>
+                  <h3 className="text-xl font-bold text-purple-700">{exam.examName}</h3>
+                  <p className="text-gray-600 mt-1">{exam.examDescription}</p>
+                  <p className="text-sm text-gray-400 mt-2">Code: {exam.examCode}</p>
+                  <p className="text-sm text-gray-400">Created: {new Date(exam.createdAt).toLocaleString()}</p>
+                  {exam.examEndTime && (
+                    <p className="text-sm text-red-600 font-semibold mt-1">
+                      Ends: {new Date(exam.examEndTime).toLocaleString()}
+                    </p>
+                  )}
                 </div>
 
-                {/* Status Section */}
-                {isCompleted ? (
-                  <>
-                    <p className="mt-3 text-green-700 font-semibold">✅ Exam Completed</p>
+                <div className="mt-4 space-y-2">
+                  {/* <div className="flex gap-3">
                     <button
-                      className="mt-2 bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
-                      onClick={() => handleViewResult(exam.examCode)}
+                      onClick={() => window.open(exam.questionURL, '_blank')}
+                      className="bg-blue-600 text-white px-3 py-1.5 rounded-md hover:bg-blue-700 text-sm"
                     >
-                      View Result
+                      View Question
                     </button>
-                  </>
-                ) : reqStatus === 'approved' ? (
-                  <>
-                    <p className="mt-3 text-green-600 font-medium">✅ Access Approved</p>
                     <button
-                      className="mt-2 bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
-                      onClick={() => handleStartExam(exam)}
+                      onClick={() => window.open(exam.answerURL, '_blank')}
+                      className="bg-green-600 text-white px-3 py-1.5 rounded-md hover:bg-green-700 text-sm"
                     >
-                      Start Exam
+                      View Answer
                     </button>
-                  </>
-                ) : reqStatus === 'pending' ? (
-                  <button
-                    disabled
-                    className="mt-3 bg-yellow-400 text-white px-4 py-2 rounded cursor-not-allowed"
-                  >
-                    Requested
-                  </button>
-                ) : reqStatus === 'declined' ? (
-                  <p className="mt-3 text-red-500 font-medium">❌ Access Request Declined</p>
-                ) : (
-                  <button
-                    onClick={() => handleRequest(exam.examCode)}
-                    disabled={loadingMap[exam.examCode]}
-                    className="mt-3 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-                  >
-                    {loadingMap[exam.examCode] ? 'Requesting...' : 'Request Access'}
-                  </button>
-                )}
-              </li>
+                  </div> */}
+
+                  {isCompleted ? (
+                    <>
+                      <p className="text-green-700 font-medium">✅ Exam Completed</p>
+                      <button
+                        className="w-full bg-gray-700 text-white px-3 py-2 rounded-md hover:bg-gray-800 text-sm"
+                        onClick={() => handleViewResult(exam.examCode)}
+                      >
+                        View Result
+                      </button>
+                    </>
+                  ) : reqStatus === 'approved' ? (
+                    <>
+                      <p className="text-green-600 font-medium">✅ Access Approved</p>
+                      <button
+                        className="w-full bg-purple-600 text-white px-3 py-2 rounded-md hover:bg-purple-700 text-sm"
+                        onClick={() => handleStartExam(exam)}
+                      >
+                        Start Exam
+                      </button>
+                    </>
+                  ) : reqStatus === 'pending' ? (
+                    <button
+                      disabled
+                      className="w-full bg-yellow-400 text-white px-3 py-2 rounded-md text-sm cursor-not-allowed"
+                    >
+                      Requested
+                    </button>
+                  ) : reqStatus === 'declined' ? (
+                    <p className="text-red-500 font-medium">❌ Access Declined</p>
+                  ) : (
+                    <button
+                      onClick={() => handleRequest(exam.examCode)}
+                      disabled={loadingMap[exam.examCode]}
+                      className="w-full bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 text-sm"
+                    >
+                      {loadingMap[exam.examCode] ? 'Requesting...' : 'Request Access'}
+                    </button>
+                  )}
+                </div>
+              </div>
             );
           })}
-        </ul>
+        </div>
       )}
 
       {/* Modal for Exam Result */}
       {showModal && selectedResult && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded shadow-lg w-full max-w-md relative">
-            <h3 className="text-xl font-semibold mb-2">Result - {selectedResult.examCode}</h3>
-            <p><strong>Marks:</strong> {selectedResult.marks}</p>
-            <p><strong>Total Questions:</strong> {selectedResult.totalQuestions}</p>
-            <p><strong>Correct:</strong> {selectedResult.correct}</p>
-            <p><strong>Wrong:</strong> {selectedResult.wrong}</p>
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 px-4">
+          <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md relative">
+            <h3 className="text-xl font-bold text-gray-800 mb-3 text-center">
+              Exam Result 
+            </h3>
+            <div className="space-y-2 text-gray-700">
+              <p><strong>Exam Code:</strong> {selectedResult.examCode}</p>
 
+              <p><strong>Marks:</strong> {selectedResult.correctAnswers}</p>
+              {/* <p><strong>Total Questions:</strong> {selectedResult.totalQuestions}</p> */}
+              <p><strong>Correct:</strong> {selectedResult.correctAnswers}</p>
+              <p><strong>Wrong:</strong> {selectedResult.wrongAnswers}</p>
+            </div>
             <button
-              className="absolute top-2 right-2 text-red-500 hover:text-red-700"
+              className="absolute top-2 right-3 text-red-500 text-xl hover:text-red-700"
               onClick={() => setShowModal(false)}
             >
               ✖

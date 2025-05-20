@@ -1,7 +1,7 @@
 import { Fragment } from 'react';
 import { Disclosure } from '@headlessui/react';
 import { Bars3Icon, BellIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import logo from '../../assets/Logo.jpeg';
+import logo from '../../assets/Logos.jpeg';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import API from '../../config/API'; // Ensure your API is set up properly
@@ -9,11 +9,11 @@ import { Outlet } from 'react-router-dom'; //
 
 
 const navigation = [
-  { name: 'Dashboard', to: '/student', key: 'dashboard' },
-  { name: 'Exams', to: '/student/exams', key: 'examslist' },
-  {name:"list", to :"/student/exams-list",key:'exams-list'},
-  { name: 'Requests', to: '/student/request-exams', key: 'request' },
-  { name: 'Profile', to: '/student/profile', key: 'userprofile' },
+  { name: 'Home', to: '/student', key: 'dashboard' },
+  { name: 'My Exams', to: '/student/exams', key: 'examslist' },
+  {name:"Available Exams", to :"/student/exams-list",key:'exams-list'},
+  { name: 'Exam Requests', to: '/student/request-exams', key: 'request' },
+  { name: 'My Profile', to: '/student/profile', key: 'userprofile' },
   { name: 'Logout', key: 'logout', isLogout: true }, // still no `to`
 ];
 
@@ -44,10 +44,10 @@ const StudentDashboardLayout = ({ children }) => {
       {({ open }) => (
         <>
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="flex h-20 items-center justify-between">
+            <div className="flex h-30 items-center justify-between">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <img src={logo} alt="Logo" className="w-20 h-20" />
+                  <img src={logo} alt="Logo" className="w-28 h-28 rounded-full object-cover ml-30 md:object-center" />
                 </div>
                 <div className="hidden md:block ml-10 flex items-baseline space-x-4">
                   {navigation.map((item) =>
@@ -82,7 +82,7 @@ const StudentDashboardLayout = ({ children }) => {
                   type="button"
                   className="hidden md:inline-flex rounded-full bg-gray-800 p-1 text-gray-400 hover:text-white focus:outline-none"
                 >
-                  <BellIcon className="h-6 w-6" aria-hidden="true" />
+                  {/* <BellIcon className="h-6 w-6" aria-hidden="true" /> */}
                 </button>
                 <div className="md:hidden ml-4">
                   <Disclosure.Button className="inline-flex items-center justify-center rounded-md bg-gray-800 p-2 text-gray-400 hover:bg-gray-700 hover:text-white">

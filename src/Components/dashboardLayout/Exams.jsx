@@ -12,7 +12,7 @@ const AdminExamsList = () => {
   useEffect(() => {
     const fetchExams = async () => {
       try {
-        const response = await API.get("Question/exams/list");
+        const response = await API.get("Question/all-exams");
         setExams(response.data);
       } catch (error) {
         console.error("Error fetching exams", error);
@@ -53,6 +53,7 @@ const AdminExamsList = () => {
             <table className="min-w-full bg-white border border-gray-200">
               <thead className="bg-gray-100 text-gray-700">
                 <tr>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">Exam Category</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold">Exam Code</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold">Name</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold">Description</th>
@@ -62,6 +63,8 @@ const AdminExamsList = () => {
               <tbody>
                 {exams.map((exam) => (
                   <tr key={exam.examCode} className="border-t hover:bg-gray-50">
+                    <td className="px-6 py-4">{exam.category}</td>
+
                     <td className="px-6 py-4">{exam.examCode}</td>
                     <td className="px-6 py-4">{exam.examName}</td>
                     <td className="px-6 py-4">{exam.examDescription}</td>

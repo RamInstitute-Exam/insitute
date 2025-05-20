@@ -1,111 +1,120 @@
-import { PhotoIcon, UserCircleIcon } from '@heroicons/react/24/solid'
-import { ChevronDownIcon } from '@heroicons/react/16/solid'
-import API from '../../config/API'
 import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
+import API from '../../config/API'
+import { UserCircleIcon, EnvelopeIcon, DevicePhoneMobileIcon } from '@heroicons/react/24/outline'
 
-export default function StudentProfile() {
+const StudentProfile = () => {
   const [studentData, setStudentData] = useState({})
-
-//   const handleChange = (e) => {
-//     const { name, value } = e.target
-//     setStudentData(prev => ({
-//       ...prev,
-//       [name]: value,
-//     }))
-//   }
+  const [examStats, setExamStats] = useState({ completed: 0, total: 0 })
 
   useEffect(() => {
     const userId = localStorage.getItem('userId')
-    if (!userId) return;
+    if (!userId) return
 
-    const FetchUserData = async () => {
+    const fetchStudent = async () => {
       try {
-        const response = await API.get(`Student/student-profile/${userId}`)
-        setStudentData(response.data.studentdetails)
-      } catch (error) {
-        console.error("Failed to fetch student data", error)
+        const res = await API.get(`Student/student-profile/${userId}`)
+        setStudentData(res.data.studentdetails)
+        console.log(res.data);
+        
+
+        // Example: fetch completed and total exam counts
+        
+        const examRes = await API.get(`Question/student/${userId}/exam/status`)
+        setExamStats(examRes.data) // expected: { completed: 6, total: 10 }
+      } catch (err) {
+        console.error('Error fetching student profile:', err)
       }
     }
 
-    FetchUserData()
+    fetchStudent()
   }, [])
 
+  const { name, email, mobileNumber ,profilePhoto} = studentData
+  const { completed, total } = examStats
+  const progress = total ? Math.round((completed / total) * 100) : 0
+
   return (
-    <form>
-      <div className="space-y-12">
-        {/* === PERSONAL INFORMATION SECTION === */}
-        <div className="border-b border-gray-900/10 pb-12">
-          <h2 className="text-base font-semibold text-gray-900">Personal Information</h2>
-          
-          <div className="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
-            
-            <div className="sm:col-span-3">
-              <label htmlFor="name" className="block text-sm font-medium text-gray-900">
-                Full Name
-              </label>
-              <input
-                type="text"
-                name="name"
-                id="name"
-                value={studentData.name || ''}
-                className="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:outline-indigo-600"
-              />
-            </div>
+   <motion.div
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.6 }}
+  className="max-w-3xl mx-auto mt-10 bg-white p-6 rounded-xl shadow-md dark:bg-gray-900 dark:text-white"
+>
+  <div className="flex flex-wrap items-center gap-6">
+    <img
+      src={profilePhoto}
+      alt="Profile"
+      className="w-20 h-20 rounded-full object-cover border-2 border-blue-500"
+    />
+    <div>
+      <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">{name}</h2>
+      <p className="flex items-center text-gray-600 text-sm dark:text-gray-300">
+        <EnvelopeIcon className="w-4 h-4 mr-2" />
+        {email}
+      </p>
+      <p className="flex items-center text-gray-600 text-sm dark:text-gray-300">
+        <DevicePhoneMobileIcon className="w-4 h-4 mr-2" />
+        {mobileNumber}
+      </p>
+    </div>
+  </div>
 
-            <div className="sm:col-span-3">
-              <label htmlFor="email" className="block text-sm font-medium text-gray-900">
-                Email
-              </label>
-              <input
-                type="email"
-                name="email"
-                id="email"
-                value={studentData.email || ''}
-                className="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:outline-indigo-600"
-              />
-            </div>
+  {/* Progress Section */}
+  <div className="mt-6 text-center">
+    {/* <ProgressCircle percentage={progress} /> */}
+    <p className="text-sm text-gray-600 mt-2 dark:text-gray-300">
+      {completed}  exams completed
+    </p>
+  </div>
+</motion.div>
 
-            <div className="sm:col-span-3">
-              <label htmlFor="mobileNumber" className="block text-sm font-medium text-gray-900">
-                Mobile Number
-              </label>
-              <input
-                type="text"
-                name="mobileNumber"
-                id="mobileNumber"
-                value={studentData.mobileNumber || ''}
-                className="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:outline-indigo-600"
-              />
-            </div>
-
-            <div className="sm:col-span-3">
-              <label htmlFor="whatsappNumber" className="block text-sm font-medium text-gray-900">
-                WhatsApp Number
-              </label>
-              <input
-                type="text"
-                name="whatsappNumber"
-                id="whatsappNumber"
-                value={studentData.whatsappNumber || ''}
-                className="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:outline-indigo-600"
-              />
-            </div>
-
-            <div className="col-span-full">
-              <label htmlFor="permanent_address" className="block text-sm font-medium text-gray-900">
-                Address
-              </label>
-              <input
-                type="text"
-                name="permanent_address"
-                id="permanent_address"
-                value={studentData.permanent_address || ''}
-                className="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:outline-indigo-600"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    </form>
   )
 }
+
+// Circular SVG progress
+const ProgressCircle = ({ percentage }) => {
+  const radius = 45
+  const stroke = 8
+  const normalized = radius - stroke * 2
+  const circumference = 2 * Math.PI * normalized
+  const offset = circumference - (percentage / 100) * circumference
+
+  return (
+    <svg height={radius * 2} width={radius * 2} className="mx-auto">
+      <circle
+        stroke="#E5E7EB"
+        fill="transparent"
+        strokeWidth={stroke}
+        r={normalized}
+        cx={radius}
+        cy={radius}
+      />
+      <motion.circle
+        stroke="#3B82F6"
+        fill="transparent"
+        strokeWidth={stroke}
+        strokeDasharray={circumference}
+        strokeDashoffset={offset}
+        strokeLinecap="round"
+        r={normalized}
+        cx={radius}
+        cy={radius}
+        initial={{ strokeDashoffset: circumference }}
+        animate={{ strokeDashoffset: offset }}
+        transition={{ duration: 1 }}
+      />
+      <text
+        x="50%"
+        y="50%"
+        dominantBaseline="middle"
+        textAnchor="middle"
+        className="text-blue-600 font-semibold"
+      >
+        {percentage}%
+      </text>
+    </svg>
+  )
+}
+
+export default StudentProfile

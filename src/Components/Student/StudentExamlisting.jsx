@@ -212,7 +212,18 @@ useEffect(() => {
     }
   };
 
- 
+  const handleRequest = async (examCode) => {
+    try {
+      setLoadingMap(prev => ({ ...prev, [examCode]: true }));
+      await API.post('Question/exams/request', { examCode, studentId });
+      toast.success('Request sent to admin.');
+      setRequests();
+    } catch {
+      toast.error('Failed to send request.');
+    } finally {
+      setLoadingMap(prev => ({ ...prev, [examCode]: false }));
+    }
+  };
 
 
   // Derived data for category, year, month and exam details
@@ -232,16 +243,149 @@ useEffect(() => {
     : [];
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <svg className="animate-spin h-10 w-10 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none"
-          viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor"
-            d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-        </svg>
+   return (
+  <div className="p-4 max-w-3xl mx-auto min-h-screen bg-gray-50">
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={level}
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+        className="space-y-4"
+      >
+        {level !== 'category' && (
+          <button
+            onClick={goBack}
+            className="text-blue-600 underline flex items-center space-x-1"
+          >
+            ← Back
+          </button>
+        )}
+
+        {level === 'category' && categories.map((cat) => (
+          <motion.div
+            key={cat}
+            variants={itemVariants}
+            onClick={() => changeLevel('year', cat)}
+            className="cursor-pointer bg-white p-4 shadow rounded flex items-center hover:bg-blue-50"
+          >
+            <FolderIcon />
+            <span className="text-lg font-semibold">{cat}</span>
+          </motion.div>
+        ))}
+
+        {level === 'year' && years.map((yr) => (
+          <motion.div
+            key={yr}
+            variants={itemVariants}
+            onClick={() => changeLevel('month', selectedCategory, yr)}
+            className="cursor-pointer bg-white p-4 shadow rounded flex items-center hover:bg-green-50"
+          >
+            <CalendarIcon />
+            <span className="text-lg font-semibold">{yr}</span>
+          </motion.div>
+        ))}
+
+        {level === 'month' && months.map((mon) => (
+          <motion.div
+            key={mon}
+            variants={itemVariants}
+            onClick={() => changeLevel('details', selectedCategory, selectedYear, mon)}
+            className="cursor-pointer bg-white p-4 shadow rounded flex items-center hover:bg-yellow-50"
+          >
+            <MonthIcon />
+            <span className="text-lg font-semibold">{mon}</span>
+          </motion.div>
+        ))}
+
+        {level === 'details' && examDetails.map((exam) => {
+          const status = statuses[exam.examCode];
+          const result = results[exam.examCode];
+          const requestStatus = requests[exam.examCode];
+          const isLoading = loadingMap[exam.examCode];
+
+          return (
+            <motion.div
+              key={exam._id}
+              variants={itemVariants}
+              className="bg-white p-4 shadow rounded"
+            >
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-lg font-semibold">{exam.examName}</h3>
+                  <p className="text-sm text-gray-600">
+                    Code: {exam.examCode} | Time: {exam.examDuration} mins
+                  </p>
+                  {status === 'completed' && result && (
+                    <p className="mt-1 text-green-600 text-sm">
+                      ✅ Completed - Score: {result.totalCorrect} / {result.totalQuestions}
+                    </p>
+                  )}
+                  {status === 'not started' && (
+                    <p className="mt-1 text-yellow-600 text-sm">🕒 Not started</p>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {status === 'completed' && (
+                    <button
+                      onClick={() => {
+                        setSelectedResult(result);
+                        setShowModal(true);
+                      }}
+                      className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+                    >
+                      View Result
+                    </button>
+                  )}
+                  {status === 'not started' && requestStatus === 'approved' && (
+                    <button
+                      onClick={() => handleStartExam(exam)}
+                      className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center"
+                    >
+                      <LogIn className="w-4 h-4 mr-1" /> Start
+                    </button>
+                  )}
+                  {status === 'not started' && requestStatus !== 'approved' && (
+                    <button
+                      disabled={isLoading}
+                      onClick={() => requestAccess(exam.examCode)}
+                      className={`px-3 py-1 rounded ${isLoading ? 'bg-gray-300' : 'bg-yellow-500 hover:bg-yellow-600'} text-white`}
+                    >
+                      {isLoading ? 'Requesting...' : 'Request Access'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          );
+        })}
+      </motion.div>
+    </AnimatePresence>
+
+    {/* Modal for Result */}
+    {showModal && selectedResult && (
+      <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-40">
+        <div className="bg-white rounded-lg p-6 w-[90%] max-w-md shadow-lg relative">
+          <button
+            className="absolute top-2 right-3 text-gray-600 hover:text-black"
+            onClick={() => setShowModal(false)}
+          >
+            ✕
+          </button>
+          <h2 className="text-xl font-bold mb-4">Exam Result</h2>
+          <p><strong>Exam Code:</strong> {selectedResult.examCode}</p>
+          <p><strong>Total Questions:</strong> {selectedResult.totalQuestions}</p>
+          <p><strong>Correct:</strong> {selectedResult.totalCorrect}</p>
+          <p><strong>Wrong:</strong> {selectedResult.totalWrong}</p>
+          <p><strong>Score:</strong> {selectedResult.totalCorrect} / {selectedResult.totalQuestions}</p>
+        </div>
       </div>
-    );
+    )}
+  </div>
+);
+
   }
 
   return (
@@ -367,11 +511,16 @@ useEffect(() => {
               <ul className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {examDetails.map(exam => {
                   const reqStatus = requests[exam.examCode]; // e.g. 'approved', 'pending', undefined
-                  const subStatus = submissionStatus[exam._id];
+                  const subStatus = submissionStatus[exam.examCode];
                   console.log(subStatus, "submission");
                   
                   const isExpired = exam.examEndTime ? new Date() > new Date(exam.examEndTime) : false;
-                  const completed = subStatus?.status === 'completed';
+                  const isCompleted = subStatus?.status === 'completed';
+                  console.log(isCompleted,"complete");
+                  const pending =subStatus?.status === 'pending'
+                  
+                  console.log(pending,"pending");
+
 
                   return (
                     <motion.li
@@ -382,44 +531,47 @@ useEffect(() => {
                       <div>
                         <h2 className="font-semibold text-lg mb-2">{exam.examName}</h2>
                         <p className="text-sm text-gray-500 mb-2">Code: {exam.examCode}</p>
-                        <p className="text-sm text-gray-500 mb-2">Time: {exam.examStartTime} to {exam.examEndTime || 'Not finish'}</p>
+                        {/* <p className="text-sm text-gray-500 mb-2">Time: {exam.startTime} to {exam.endTime || 'Not finish'}</p> */}
                       </div>
                       <div>
-                       {completed ? (
-          <button
-            onClick={() => {
-              setSelectedResult(results[exam.examCode]);
-              setShowModal(true);
-            }}
-            className="w-full py-2 mt-2 bg-green-600 text-white rounded hover:bg-green-700"
-          >
-            View Result
-          </button>
-        ) : subStatus === 'approved' ? (
-          <button
-            onClick={() => handleStartExam(exam)}
-            disabled={isExpired}
-            className={`w-full py-2 mt-2 text-white rounded ${
-              isExpired
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-blue-600 hover:bg-blue-700'
-            }`}
-          >
-            {isExpired ? 'Expired' : 'Start Exam'}
-          </button>
-        ) : subStatus === 'pending' ? (
-          <button disabled className="w-full py-2 mt-2 bg-yellow-400 text-white rounded cursor-not-allowed">
-            Request Pending
-          </button>
-        ) : (
-          <button
-            onClick={() => requestAccess(exam.examCode)}
-            disabled={loadingMap[exam.examCode]}
-            className="w-full py-2 mt-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-          >
-            {loadingMap[exam.examCode] ? 'Requesting...' : 'Request Access'}
-          </button>
-        )}
+                      {isCompleted ? (
+                    <>
+                      <p className="text-green-700 font-medium">✅ Exam Completed</p>
+                      <button
+                        className="w-full bg-gray-700 text-white px-3 py-2 rounded-md hover:bg-gray-800 text-sm"
+                        onClick={() => handleViewResult(exam.examCode)}
+                      >
+                        View Result
+                      </button>
+                    </>
+                  ) : reqStatus === 'approved' ? (
+                    <>
+                      <p className="text-green-600 font-medium">✅ Access Approved</p>
+                      <button
+                        className="w-full bg-purple-600 text-white px-3 py-2 rounded-md hover:bg-purple-700 text-sm"
+                        onClick={() => handleStartExam(exam)}
+                      >
+                        Start Exam
+                      </button>
+                    </>
+                  ) : reqStatus === 'pending' ? (
+                    <button
+                      disabled
+                      className="w-full bg-yellow-400 text-white px-3 py-2 rounded-md text-sm cursor-not-allowed"
+                    >
+                      Requested
+                    </button>
+                  ) : reqStatus === 'declined' ? (
+                    <p className="text-red-500 font-medium">❌ Access Declined</p>
+                  ) : (
+                    <button
+                      onClick={() => handleRequest(exam.examCode)}
+                      disabled={loadingMap[exam.examCode]}
+                      className="w-full bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 text-sm"
+                    >
+                      {loadingMap[exam.examCode] ? 'Requesting...' : 'Request Access'}
+                    </button>
+                  )}
       </div>
     </motion.li>
   );
@@ -428,25 +580,9 @@ useEffect(() => {
             )}
           </motion.div>
         )}
+           
       </AnimatePresence>
-        {showModal && selectedResult && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div className="bg-white p-6 rounded shadow-lg w-full max-w-md relative">
-      <h3 className="text-xl font-semibold mb-2">Result - {selectedResult.examCode}</h3>
-      <p><strong>Marks:</strong> {selectedResult.marks}</p>
-      <p><strong>Total Questions:</strong> {selectedResult.totalQuestions}</p>
-      <p><strong>Correct:</strong> {selectedResult.correct}</p>
-      <p><strong>Wrong:</strong> {selectedResult.wrong}</p>
-
-      <button
-        className="absolute top-2 right-2 text-red-500 hover:text-red-700"
-        onClick={() => setShowModal(false)}
-      >
-        ✖
-      </button>
-    </div>
-  </div>
-)}
+   
     </div>
     
   );

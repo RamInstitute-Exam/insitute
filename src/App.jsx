@@ -24,6 +24,7 @@ import StudentDashboardLayout from './Components/Student/StudentDashboard'
 import StudentRequests from './Components/Student/UnapprovedExams'
 import StudentProfile from './Components/Student/StudentProfile'
 import StudentExamListing from './Components/Student/StudentExamlisting'
+import StudentHomeDashboard from './Components/Student/Dashboard'
 function App() {
   const [count, setCount] = useState(0)
 
@@ -45,7 +46,7 @@ function App() {
 
 
     <Route path='/student' element={<StudentDashboardLayout />}>
-    <Route index element={<div>Student Home</div>} /> {/* Default dashboard page */}
+    <Route index element={<StudentHomeDashboard/>} /> {/* Default dashboard page */}
     <Route path='exams' element={<StudentExamList />} />
     <Route path='profile' element={<StudentProfile />} />
     <Route path='request-exams' element={<StudentRequests />} />

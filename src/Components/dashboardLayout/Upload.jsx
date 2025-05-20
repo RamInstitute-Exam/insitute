@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { UploadCloud, FileText } from 'lucide-react';
-
+import { toast } from 'react-toastify';
 export default function AdminUpload() {
   const [examCode, setExamCode] = useState('');
   const [examName, setExamName] = useState('');
@@ -42,8 +42,8 @@ export default function AdminUpload() {
       await axios.post('http://localhost:5000/Question/upload-answer-key', answerForm, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-
-      alert('Upload successful!');
+toast
+      toast.success('Upload successful!');
       window.location.reload();
     } catch (err) {
       console.error(err);
@@ -99,8 +99,8 @@ export default function AdminUpload() {
             className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-400"
           >
             <option value="">Select Category</option>
-            <option value="Java">GK</option>
-            <option value="Python">Coding</option>
+            <option value="GK">GK</option>
+            <option value="Coding">Coding</option>
             {/* <option value="React">React</option>
             <option value="Next.js">Next.js</option>
             <option value="Node.js">Node.js</option> */}
