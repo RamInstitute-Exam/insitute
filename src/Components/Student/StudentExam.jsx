@@ -160,8 +160,8 @@ useEffect(() => {
             </div>
           </div>
         ))}
-
         {/* Pagination + Buttons */}
+{!isSubmitted && (
         <div className="flex justify-between items-center mt-10">
           <button
             type="button"
@@ -199,6 +199,7 @@ useEffect(() => {
             </button>
           )}
         </div>
+)}
       </form>
     </div>
   );
