@@ -29,10 +29,10 @@ export default function AdminRegister() {
     try {
       const response = await API.post("Admin/Register", { ...FormData });
       console.log("response", response);
-      toast.success('Login Successful!')
+      toast.success('Register Successful!')
       setTimeout(()=>{
       navigate("/institute-exam-admin-Login");
-      },1000)
+      },200)
     } catch (error) {
       console.error("Registration failed", error);
       

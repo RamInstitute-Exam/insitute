@@ -27,7 +27,7 @@ export default function AdminLogin() {
       toast.success("Login Successful!");
       setTimeout(() => {
         navigate("/admin");
-      }, 1000);
+      }, 100);
     } catch (error) {
       console.error("Login failed:", error.response?.data || error.message);
       if (error.response?.status === 404) {
