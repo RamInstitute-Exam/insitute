@@ -5,7 +5,7 @@ import App from './App.jsx'
 import { ToastContainer } from 'react-toastify'
 import { BrowserRouter } from 'react-router-dom'
 import 'react-toastify/dist/ReactToastify.css'
-
+import React from 'react'
 const ResponsiveToastContainer = () => {
   const [position, setPosition] = React.useState('top-right');
 
