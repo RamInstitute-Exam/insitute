@@ -2,7 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import API from "../config/API";
 import { useState } from "react";
 import logo from "../assets/Logos.jpeg"
-
+import { toast } from "react-toastify";
 export default function AdminRegister() {
   const navigate = useNavigate();
   const [FormData, setFormData] = useState({

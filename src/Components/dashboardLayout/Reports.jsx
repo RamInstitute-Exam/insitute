@@ -33,8 +33,8 @@ export default function AdminExamReport() {
 
   const handleDownloadCSV = () => {
     const headers = [
-      'Student Name',
-      'Email',
+      // 'Student Name',
+      // 'Email',
       'Exam Code',
       'Start Time',
       'End Time',
@@ -45,8 +45,8 @@ export default function AdminExamReport() {
     ];
 
     const rows = filteredAndSortedReports.map((r) => [
-      r.studentName,
-      r.email,
+      // r.studentName,
+      // r.email,
       r.examCode,
       r.startTime ? new Date(r.startTime).toLocaleString() : '',
       r.endTime ? new Date(r.endTime).toLocaleString() : '',
