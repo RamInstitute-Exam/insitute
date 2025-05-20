@@ -1,6 +1,12 @@
+'use client';
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import API from '../../config/API';
+import { useNavigate } from 'react-router-dom';
+import { LogIn } from 'lucide-react';
 
 // Icons
 const FolderIcon = () => (
@@ -45,38 +51,113 @@ const itemVariants = {
 export default function ExamBrowser() {
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Levels: category, year, month, details
   const [level, setLevel] = useState('category');
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedYear, setSelectedYear] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(null);
+  const [statuses, setStatuses] = useState({});
+  const [results, setResults] = useState({});
 
-  // Mock request/submission data
-  const [requestHistory, setRequestHistory] = useState([]);
-  const [submissionStatus, setSubmissionStatus] = useState({});
+  const [requestHistory, setRequestHistory] = useState([]); // raw requests from API
+  const [requests, setRequests] = useState({}); // map examCode -> status
+  const [submissionStatus, setSubmissionStatus] = useState({}); // map examId -> submission details
+  const [loadingMap, setLoadingMap] = useState({}); // per-exam loading for request button
+  const [showModal, setShowModal] = useState(false);
+  const [selectedResult, setSelectedResult] = useState(null);
+  
+  const navigate = useNavigate();
+  const studentId = localStorage.getItem('userId');
 
-  useEffect(() => {
+
+   
+
+  // Fetch exams, requests, and submission statuses
+// 1) Fetch exams, requests, submissionStatus on studentId change
+useEffect(() => {
+  async function fetchAllData() {
     setLoading(true);
-    axios.get('http://localhost:5000/Question/all-exams')
-      .then(res => {
-        setExams(res.data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error('Error:', err);
-        setLoading(false);
+    try {
+      const examsRes = await API.get('Question/all-exams');
+      const examsList = examsRes.data.exams || examsRes.data || [];
+      setExams(examsList);
+
+      const reqRes = await API.get(`Question/student/${studentId}/requests`);
+      const reqMap = {};
+      (reqRes.data.requests || []).forEach(req => {
+        reqMap[req.examCode] = req.status;
       });
+      setRequests(reqMap);
+      setRequestHistory(reqRes.data.requests || []);
 
-    // TODO: Replace these with real API calls
-    setRequestHistory([
-      { examId: '123', status: 'Approved' },
-      { examId: '456', status: 'Pending' }
-    ]);
-    setSubmissionStatus({
-      '123': { completed: true, marks: 18, total: 20 },
-      '456': { completed: false }
-    });
-  }, []);
+      // Fetch submission statuses in parallel
+      const statusPromises = examsList.map(async exam => {
+        try {
+          const statusRes = await API.get(`Student/student/${studentId}/exam/${exam.examCode}/status`);
+          return [exam._id, statusRes.data || {}];
+        } catch {
+          return [exam._id, {}];
+        }
+      });
+      const statusEntries = await Promise.all(statusPromises);
+      const statusMap = Object.fromEntries(statusEntries);
+      setSubmissionStatus(statusMap);
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to load data.');
+    } finally {
+      setLoading(false);
+    }
+  }
 
+  if (studentId) {
+    fetchAllData();
+  } else {
+    toast.error('User not logged in.');
+    setLoading(false);
+  }
+}, [studentId]);
+
+// 2) Fetch detailed statuses + results once exams have been set
+useEffect(() => {
+  if (!studentId || exams.length === 0) return;
+
+  async function fetchStatusesAndResults() {
+    try {
+      const statusMap = {};
+      const resultMap = {};
+
+      await Promise.all(
+        exams.map(async (exam) => {
+          const statusRes = await API.get(`Student/student/${studentId}/exam/${exam.examCode}/status`);
+          const status = statusRes.data.status;
+          statusMap[exam.examCode] = status;
+
+          if (status === 'completed') {
+            const resultRes = await API.get(`Student/student/${studentId}/exam/${exam.examCode}/result`);
+            resultMap[exam.examCode] = resultRes.data;
+            console.log(resultMap,"mao");
+            
+              setSelectedResult([exam.examCode ]);
+              setShowModal(true);
+          }
+        })
+      );
+
+      setStatuses(statusMap);
+      setResults(resultMap);
+    } catch (error) {
+      console.error(error);
+      toast.error('Error fetching exam statuses/results');
+    }
+  }
+
+  fetchStatusesAndResults();
+}, [studentId, exams]);
+
+
+  // Change navigation level with transition effect
   const changeLevel = (newLevel, category, year, month) => {
     setLevel(null);
     setTimeout(() => {
@@ -84,7 +165,7 @@ export default function ExamBrowser() {
       setSelectedCategory(category ?? null);
       setSelectedYear(year ?? null);
       setSelectedMonth(month ?? null);
-    }, 300);
+    }, 200);
   };
 
   const goBack = () => {
@@ -93,30 +174,75 @@ export default function ExamBrowser() {
     else if (level === 'year') changeLevel('category');
   };
 
-  const requestAccess = examId => {
-    alert(`Access request sent for Exam ID: ${examId}`);
-    setRequestHistory([...requestHistory, { examId, status: 'Pending' }]);
+  // Request exam access
+  const requestAccess = async (examId) => {
+    try {
+      setLoadingMap(prev => ({ ...prev, [examId]: true }));
+      await API.post('Question/exams/request', { examCode: examId, studentId });
+      toast.success('Access request sent to admin');
+      // Refresh requests after successful request
+      const reqRes = await API.get(`Question/student/${studentId}/requests`);
+      const reqMap = {};
+      (reqRes.data.requests || []).forEach(req => {
+        reqMap[req.examCode] = req.status;
+      });
+      setRequests(reqMap);
+      setRequestHistory(reqRes.data.requests || []);
+    } catch (error) {
+      toast.error('Failed to send request');
+    } finally {
+      setLoadingMap(prev => ({ ...prev, [examId]: false }));
+    }
   };
 
+  // Start exam navigation
+  const handleStartExam = async (exam) => {
+    if (exam.examEndTime && new Date() > new Date(exam.examEndTime)) {
+      toast.warning('Exam time has expired!');
+      return;
+    }
+    try {
+      const res = await API.get(`Question/exams/${exam.examCode}/questions`);
+      const { questions } = res.data;
+      navigate(`/student/exam/${exam.examCode}`, {
+        state: { questions, examEndTime: exam.examEndTime },
+      });
+    } catch {
+      toast.error('Failed to start the exam.');
+    }
+  };
+
+ 
+
+
+  // Derived data for category, year, month and exam details
   const categories = [...new Set(exams.map(e => e.category))];
-  const years = selectedCategory ? [...new Set(exams.filter(e => e.category === selectedCategory).map(e => e.year))] : [];
+  const years = selectedCategory
+    ? [...new Set(exams.filter(e => e.category === selectedCategory).map(e => e.year))]
+    : [];
   const months = selectedCategory && selectedYear
     ? [...new Set(exams.filter(e => e.category === selectedCategory && e.year === selectedYear).map(e => e.month))]
     : [];
   const examDetails = selectedCategory && selectedYear && selectedMonth
-    ? exams.filter(e => e.category === selectedCategory && e.year === selectedYear && e.month === selectedMonth)
+    ? exams.filter(e =>
+        e.category === selectedCategory &&
+        e.year === selectedYear &&
+        e.month === selectedMonth
+      )
     : [];
 
-  if (loading) return (
-    <div className="flex justify-center items-center h-64">
-      <svg className="animate-spin h-10 w-10 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none"
-        viewBox="0 0 24 24">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-        <path className="opacity-75" fill="currentColor"
-          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-      </svg>
-    </div>
-  );
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <svg className="animate-spin h-10 w-10 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none"
+          viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor"
+            d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+        </svg>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 max-w-xl mx-auto min-h-screen bg-gray-50">
@@ -129,116 +255,199 @@ export default function ExamBrowser() {
             initial={{ x: -50, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: -50, opacity: 0 }}
-            className="mb-6 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 flex items-center gap-2"
+            className="mb-6 inline-flex items-center bg-gray-300 px-3 py-1 rounded hover:bg-gray-400"
           >
-            ← Back
+            &larr; Back
           </motion.button>
         )}
       </AnimatePresence>
 
-      <AnimatePresence exitBeforeEnter>
+      {/* Category View */}
+      <AnimatePresence mode="wait">
         {level === 'category' && (
-          <motion.div key="category" variants={containerVariants} initial="hidden" animate="visible" exit="exit">
-            <h1 className="text-3xl font-bold mb-6 text-center">Select Category</h1>
-            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {categories.map(cat => (
-                <motion.li key={cat} variants={itemVariants}>
-                  <button
-                    onClick={() => changeLevel('year', cat)}
-                    className="flex items-center w-full p-5 bg-yellow-100 border border-yellow-400 rounded-lg"
-                  >
-                    <FolderIcon /> {cat}
-                  </button>
-                </motion.li>
-              ))}
-            </ul>
+          <motion.div
+            key="category"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="grid grid-cols-2 sm:grid-cols-3 gap-4"
+          >
+            <h1 className="col-span-full text-3xl font-bold mb-6 text-center">Select Category</h1>
+            {categories.length === 0 ? (
+              <p className="col-span-full text-center text-gray-500">No exams available.</p>
+            ) : (
+              categories.map(category => (
+                <motion.button
+                  key={category}
+                  variants={itemVariants}
+                  onClick={() => changeLevel('year', category)}
+                  className="flex items-center justify-center p-6 bg-yellow-200 rounded shadow hover:bg-yellow-300"
+                >
+                  <FolderIcon /> {category}
+                </motion.button>
+              ))
+            )}
           </motion.div>
         )}
 
+        {/* Year View */}
         {level === 'year' && (
-          <motion.div key="year" variants={containerVariants} initial="hidden" animate="visible" exit="exit">
-            <h1 className="text-3xl font-bold mb-6 text-center">{selectedCategory} - Select Year</h1>
-            <ul className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {years.map(year => (
-                <motion.li key={year} variants={itemVariants}>
-                  <button
-                    onClick={() => changeLevel('month', selectedCategory, year)}
-                    className="flex items-center w-full p-4 border border-blue-300 rounded-lg"
-                  >
-                    <CalendarIcon /> {year}
-                  </button>
-                </motion.li>
-              ))}
-            </ul>
+          <motion.div
+            key="year"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="grid grid-cols-3 sm:grid-cols-4 gap-4"
+          >
+            <h1 className="col-span-full text-3xl font-bold mb-6 text-center">Select Year for {selectedCategory}</h1>
+            {years.length === 0 ? (
+              <p className="col-span-full text-center text-gray-500">No years found.</p>
+            ) : (
+              years.map(year => (
+                <motion.button
+                  key={year}
+                  variants={itemVariants}
+                  onClick={() => changeLevel('month', selectedCategory, year)}
+                  className="flex items-center justify-center p-4 bg-blue-200 rounded shadow hover:bg-blue-300"
+                >
+                  <CalendarIcon /> {year}
+                </motion.button>
+              ))
+            )}
           </motion.div>
         )}
 
+        {/* Month View */}
         {level === 'month' && (
-          <motion.div key="month" variants={containerVariants} initial="hidden" animate="visible" exit="exit">
-            <h1 className="text-3xl font-bold mb-6 text-center">{selectedCategory} - {selectedYear} - Select Month</h1>
-            <ul className="grid grid-cols-3 sm:grid-cols-4 gap-4">
-              {months.map(month => (
-                <motion.li key={month} variants={itemVariants}>
-                  <button
-                    onClick={() => changeLevel('details', selectedCategory, selectedYear, month)}
-                    className="flex items-center w-full p-4 border border-green-300 rounded-lg"
-                  >
-                    <MonthIcon />
-                    {new Date(0, month - 1).toLocaleString('default', { month: 'long' })}
-                  </button>
-                </motion.li>
-              ))}
-            </ul>
+          <motion.div
+            key="month"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="grid grid-cols-2 sm:grid-cols-3 gap-4"
+          >
+            <h1 className="col-span-full text-3xl font-bold mb-6 text-center">
+              {selectedCategory} - {selectedYear} - Select Month
+            </h1>
+            {months.length === 0 ? (
+              <p className="col-span-full text-center text-gray-500">No months found.</p>
+            ) : (
+              months.map(month => (
+                <motion.button
+                  key={month}
+                  variants={itemVariants}
+                  onClick={() => changeLevel('details', selectedCategory, selectedYear, month)}
+                  className="flex items-center justify-center p-4 bg-green-200 rounded shadow hover:bg-green-300"
+                >
+                  <MonthIcon /> {month}
+                </motion.button>
+              ))
+            )}
           </motion.div>
         )}
 
+        {/* Exam Details View */}
         {level === 'details' && (
-          <motion.div key="details" variants={containerVariants} initial="hidden" animate="visible" exit="exit">
+          <motion.div
+            key="details"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+          >
             <h1 className="text-3xl font-bold mb-6 text-center">
-              Exams in {selectedCategory} - {selectedYear} - {new Date(0, selectedMonth - 1).toLocaleString('default', { month: 'long' })}
+              {selectedCategory} - {selectedYear} - {selectedMonth} Exams
             </h1>
-            <div className="space-y-4">
-              {examDetails.map(exam => {
-                const request = requestHistory.find(r => r.examId === exam._id);
-                const submission = submissionStatus[exam._id];
-                const isApproved = request?.status === 'Approved';
-                const isPending = request?.status === 'Pending';
+            {examDetails.length === 0 ? (
+              <p className="text-center text-gray-500">No exams found for this selection.</p>
+            ) : (
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {examDetails.map(exam => {
+                  const reqStatus = requests[exam.examCode]; // e.g. 'approved', 'pending', undefined
+                  const subStatus = submissionStatus[exam._id];
+                  console.log(subStatus, "submission");
+                  
+                  const isExpired = exam.examEndTime ? new Date() > new Date(exam.examEndTime) : false;
+                  const completed = subStatus?.status === 'completed';
 
-                return (
-                  <motion.div
-                    key={exam._id}
-                    variants={itemVariants}
-                    className="border p-4 rounded shadow-sm bg-white"
-                  >
-                    <h2 className="text-xl font-bold text-gray-800">{exam.title}</h2>
-                    <p className="text-gray-600">Subject: {exam.subject}</p>
-                    <div className="mt-2">
-                      {submission?.completed ? (
-                        <p className="text-green-700 font-semibold">
-                          Completed: {submission.marks}/{submission.total} Marks
-                        </p>
-                      ) : isApproved ? (
-                        <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-                          Start Exams
-                        </button>
-                      ) : isPending ? (
-                        <p className="text-yellow-600 font-medium">Access Requested</p>
-                      ) : (
-                        <button
-                          onClick={() => requestAccess(exam._id)}
-                          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-                        >
-                          Request Access
-                        </button>
-                      )}
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
+                  return (
+                    <motion.li
+                      key={exam.examCode}
+                      variants={itemVariants}
+                      className="p-4 border rounded bg-white shadow flex flex-col justify-between"
+                    >
+                      <div>
+                        <h2 className="font-semibold text-lg mb-2">{exam.examName}</h2>
+                        <p className="text-sm text-gray-500 mb-2">Code: {exam.examCode}</p>
+                        <p className="text-sm text-gray-500 mb-2">Time: {exam.examStartTime} to {exam.examEndTime || 'Not finish'}</p>
+                      </div>
+                      <div>
+                       {completed ? (
+          <button
+            onClick={() => {
+              setSelectedResult(results[exam.examCode]);
+              setShowModal(true);
+            }}
+            className="w-full py-2 mt-2 bg-green-600 text-white rounded hover:bg-green-700"
+          >
+            View Result
+          </button>
+        ) : subStatus === 'approved' ? (
+          <button
+            onClick={() => handleStartExam(exam)}
+            disabled={isExpired}
+            className={`w-full py-2 mt-2 text-white rounded ${
+              isExpired
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-blue-600 hover:bg-blue-700'
+            }`}
+          >
+            {isExpired ? 'Expired' : 'Start Exam'}
+          </button>
+        ) : subStatus === 'pending' ? (
+          <button disabled className="w-full py-2 mt-2 bg-yellow-400 text-white rounded cursor-not-allowed">
+            Request Pending
+          </button>
+        ) : (
+          <button
+            onClick={() => requestAccess(exam.examCode)}
+            disabled={loadingMap[exam.examCode]}
+            className="w-full py-2 mt-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+          >
+            {loadingMap[exam.examCode] ? 'Requesting...' : 'Request Access'}
+          </button>
+        )}
+      </div>
+    </motion.li>
+  );
+})}
+              </ul>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
+        {showModal && selectedResult && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white p-6 rounded shadow-lg w-full max-w-md relative">
+      <h3 className="text-xl font-semibold mb-2">Result - {selectedResult.examCode}</h3>
+      <p><strong>Marks:</strong> {selectedResult.marks}</p>
+      <p><strong>Total Questions:</strong> {selectedResult.totalQuestions}</p>
+      <p><strong>Correct:</strong> {selectedResult.correct}</p>
+      <p><strong>Wrong:</strong> {selectedResult.wrong}</p>
+
+      <button
+        className="absolute top-2 right-2 text-red-500 hover:text-red-700"
+        onClick={() => setShowModal(false)}
+      >
+        ✖
+      </button>
     </div>
+  </div>
+)}
+    </div>
+    
   );
 }

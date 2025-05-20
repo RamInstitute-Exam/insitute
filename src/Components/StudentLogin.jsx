@@ -27,7 +27,7 @@ export default function StudentLogin() {
       setTimeout(()=>{
       navigate("/student");
 
-      },1000)
+      },100)
     } catch (error) {
       console.error(error);
      if(error.response?.status === 404){
