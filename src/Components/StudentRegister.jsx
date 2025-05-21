@@ -73,9 +73,7 @@ export default function StudentRegister() {
       });
      toast.success('Registered Successful!');
 console.log("Registration successful", res.data);
-setTimeout(() => {
   navigate("/student-Login");
-}, 100);
 
     } catch (err) {
       console.error("Registration failed", err);
