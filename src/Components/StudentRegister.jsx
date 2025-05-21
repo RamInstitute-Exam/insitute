@@ -71,11 +71,12 @@ export default function StudentRegister() {
         ...formData,
         profilePhoto: imageUrl,
       });
-      toast.success('Registered Successful!')
-      console.log("Registration successful", res.data);
-      setTimeout(()=>{
-      navigate("/student-Login");
-      },100)
+     toast.success('Registered Successful!');
+console.log("Registration successful", res.data);
+setTimeout(() => {
+  navigate("/student-Login");
+}, 100);
+
     } catch (err) {
       console.error("Registration failed", err);
     }
