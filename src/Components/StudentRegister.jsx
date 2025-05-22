@@ -71,7 +71,7 @@ export default function StudentRegister() {
         ...formData,
         profilePhoto: imageUrl,
       });
-     toast.success('Registered Successful!');
+    toast.success('Registered Successful!');
 console.log("Registration successful", res.data);
   navigate("/student-Login");
 

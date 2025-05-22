@@ -200,30 +200,7 @@ export default function StudentExamList() {
         </div>
       )}
 
-      {/* Modal for Exam Result */}
-      {showModal && selectedResult && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 px-4">
-          <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md relative">
-            <h3 className="text-xl font-bold text-gray-800 mb-3 text-center">
-              Exam Result 
-            </h3>
-            <div className="space-y-2 text-gray-700">
-              <p><strong>Exam Code:</strong> {selectedResult.examCode}</p>
-
-              <p><strong>Marks:</strong> {selectedResult.correctAnswers}</p>
-              {/* <p><strong>Total Questions:</strong> {selectedResult.totalQuestions}</p> */}
-              <p><strong>Correct:</strong> {selectedResult.correctAnswers}</p>
-              <p><strong>Wrong:</strong> {selectedResult.wrongAnswers}</p>
-            </div>
-            <button
-              className="absolute top-2 right-3 text-red-500 text-xl hover:text-red-700"
-              onClick={() => setShowModal(false)}
-            >
-              ✖
-            </button>
-          </div>
-        </div>
-      )}
+      
     </div>
   );
 }
